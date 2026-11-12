@@ -1,0 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300..800;1,400;1,500&display=swap');
+@import 'tailwindcss';
+
+/* Declared for completeness; JetBrains Mono is what actually renders. */
+@font-face {
+  font-family: 'Helvetica Neue Roman';
+  src:
+    url('/fonts/HelveticaNeue-Roman.woff2') format('woff2'),
+    url('/fonts/HelveticaNeue-Roman.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --font-heading: 'JetBrains Mono', monospace;
+  --font-body: 'JetBrains Mono', monospace;
+  /* Accent pulled from the orange-red hero imagery. */
+  --accent: #ff5a1f;
+}
+
+* {
+  font-family: 'JetBrains Mono', monospace;
+}
+.font-helvetica-neue {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #0c0a09;
+  color: #fff;
+}
+
+/* ---------- Hero intro ---------- */
+
+@keyframes kenBurns {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+.ken-burns {
+  animation: kenBurns 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+.hero-rise {
+  animation: heroRise 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes navDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.nav-drop {
+  animation: navDrop 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+/* ---------- Stats arc ---------- */
+
+@keyframes arcDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.arc-line {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: arcDraw 1.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.arc-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: popIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes pulseRing {
+  0% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+/* Hidden until its (delayed) pulse starts, so it never shows before the dot. */
+.arc-ring {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulseRing 2.8s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.arc-text {
+  animation: fadeIn 0.7s ease both;
+}
+
+/* ---------- Sections below the hero ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal.is-shown {
+  opacity: 1;
+  transform: none;
+}
+
+.marquee-track {
+  animation: marquee 45s linear infinite;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Push-up loop in the rep counter art */
+.pushup {
+  animation: pushup 1.6s ease-in-out infinite;
+}
+@keyframes pushup {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-7deg);
+  }
+}
+
+/* Faint blueprint grid behind the content sections */
+.section-grid {
+  background-image:
+    linear-gradient(rgba(100, 116, 139, 0.07) 0.6px, transparent 0.6px),
+    linear-gradient(90deg, rgba(100, 116, 139, 0.07) 0.6px, transparent 0.6px);
+  background-size: 48px 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .ken-burns,
+  .hero-rise,
+  .nav-drop,
+  .arc-line,
+  .arc-dot,
+  .arc-text,
+  .marquee-track,
+  .pushup {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+    stroke-dashoffset: 0;
+  }
+  .arc-ring {
+    animation: none;
+    opacity: 0.35;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
