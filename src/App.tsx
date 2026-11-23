@@ -455,8 +455,6 @@ function Hero() {
           style={{ animationDelay: '0.3s' }}
         >
           I'm {profile.name}.
-          <br />I write code
-          <br />and build robots.
         </h1>
         <p className="hero-rise mt-5 text-sm leading-relaxed text-white/90 sm:text-base" style={{ animationDelay: '0.5s' }}>
           Web apps, desktop tools and Arduino projects.
