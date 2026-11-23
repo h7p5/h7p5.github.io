@@ -1,20 +1,111 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Portfolio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Loaded here instead of a CSS @import, so the font and the hero image download in parallel. -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300..800;1,400;1,500&display=swap"
-    />
-    <link rel="preload" as="image" href="/images/hero-normal.webp" fetchpriority="high" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="preload" as="image" href="/textures/paper-texture.webp" type="image/webp" fetchpriority="high" crossorigin="anonymous">
+  <link rel="icon" type="image/png" href="/favico.png" />
+  <link rel="apple-touch-icon" href="/favico.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#fafafa" />
+
+  <title>Achraf (h7p5)</title>
+  <meta name="description" content="Hey, I'm Achraf. Here are a few things I made." />
+  <meta name="author" content="Achraf" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://h7p5.github.io/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Achraf (h7p5)" />
+  <meta property="og:description" content="Hey, I'm Achraf. Here are a few things I made." />
+  <meta property="og:url" content="https://h7p5.github.io/" />
+  <meta property="og:site_name" content="Achraf (h7p5)" />
+  <meta property="og:image" content="https://h7p5.github.io/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Achraf (h7p5)" />
+  <meta name="twitter:description" content="Hey, I'm Achraf. Here are a few things I made." />
+  <meta name="twitter:image" content="https://h7p5.github.io/og-image.png" />
+
+  <!-- Google Fonts: Hand-drawn + Primary -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Gloria+Hallelujah&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* Text for search engines and screen readers, hidden from the 3D view */
+    .sr-only-seo {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="seo-content" class="sr-only-seo">
+    <header>
+      <h1>Achraf (h7p5)</h1>
+      <p>Hey, I'm Achraf. Here are a few things I made.</p>
+    </header>
+
+    <nav aria-label="Main Navigation">
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/gallery">Projects</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <main>
+      <section id="projects">
+        <h2>Projects</h2>
+        <ul>
+          <li>
+            <h3>Chess Engine</h3>
+            <p>A chess engine in plain JavaScript, no libraries. Minimax with alpha-beta pruning, running in a web worker.</p>
+            <a href="https://h7p5.github.io/chess-engine/">Play it</a>
+          </li>
+          <li>
+            <h3>Fire-fighting robot</h3>
+            <p>An Arduino robot that finds a flame with a 5-channel IR sensor and puts it out with a water pump and a servo nozzle.</p>
+            <a href="https://github.com/h7p5/fire-fighting-robot">Code</a>
+          </li>
+          <li>
+            <h3>Insta Uploader</h3>
+            <p>A Python and Tkinter desktop app for uploading Stories, Reels and Posts to Instagram.</p>
+            <a href="https://github.com/h7p5/insta-uploader">Code</a>
+          </li>
+        </ul>
+      </section>
+
+      <section id="contact">
+        <h2>Contact</h2>
+        <a href="https://github.com/h7p5">GitHub</a>
+        <a href="https://www.instagram.com/h_7p5/">Instagram</a>
+      </section>
+    </main>
+  </div>
+
+  <noscript>
+    This site needs JavaScript to show the 3D portfolio.
+  </noscript>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

@@ -1,17 +1,21 @@
-# Achraf — Portfolio
+# h7p5.github.io
 
-Personal portfolio: https://h7p5.github.io
+My portfolio: https://h7p5.github.io
 
-Built with React, TypeScript, Vite and Tailwind CSS.
+A hand-drawn 3D site with a corridor and four rooms (projects, about, studio, contact).
 
-- Move the mouse over the hero to paint a brush trail that reveals the "cyber" portrait.
-- All text and project data live in `src/data/profile.ts`.
+## Credit
 
-## Run locally
+This site is a copy of [portfolio-itom](https://github.com/ITomPoland/portfolio-itom) by Tomasz "ITom" Szmajda (MIT license).
+The code, the 3D scenes and most of the drawings are his. I swapped in my own content: name, projects, avatar, cards, balloons and links.
+
+## Run it
 
 ```bash
 npm install
 npm run dev
 ```
 
-Every push to `main` is built and published to GitHub Pages by `.github/workflows/deploy.yml`.
+`npm run build` writes the site to `dist/`. Pushing to `main` deploys it to GitHub Pages.
+
+The contact form uses [Web3Forms](https://web3forms.com). It only sends when `VITE_WEB3FORMS_KEY` is set.
