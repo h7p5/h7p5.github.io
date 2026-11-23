@@ -31,7 +31,7 @@ export const profile = {
   /** Shown in Contact next to GitHub. Empty list hides the row. */
   socials: [{ label: 'Instagram', href: 'https://www.instagram.com/h_7p5/' }] as Link[],
 
-  about: ["Hey, I'm Achraf. I like building stuff, and the code is all on GitHub."],
+  about: ["Hey, I'm Achraf. Here are a few things I made."],
 
   facts: [
     { label: 'From', value: 'Algeria' },
