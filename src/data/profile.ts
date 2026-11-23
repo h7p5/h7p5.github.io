@@ -8,7 +8,7 @@ export type Fact = { label: string; value: string }
 export type EducationItem = { period: string; title: string; place: string; detail?: string }
 export type Language = { name: string; level: string; /** 0–5 dots */ score: number }
 export type ProjectStatus = 'live' | 'building' | 'planned'
-export type ProjectArt = 'chess' | 'reps'
+export type ProjectArt = 'chess' | 'reps' | 'robot' | 'uploader'
 export type Project = {
   title: string
   status: ProjectStatus
@@ -24,45 +24,34 @@ export type Link = { label: string; href: string }
 export const profile = {
   name: 'Achraf',
   /** Shown above your name in the hero. */
-  label: 'Computer Science student · Algeria',
-  /** Typed out letter by letter in the hero. */
-  tagline:
-    'I build things I care about: a chess engine you can play in the browser, and next, a camera rep counter.',
+  label: 'Developer · Algeria',
   /** Leave empty to hide every email button. */
   email: '',
   github: { handle: 'h7p5', href: 'https://github.com/h7p5' },
+  /** Shown in Contact next to GitHub. Empty list hides the row. */
+  socials: [] as Link[],
 
   about: [
-    "I'm Achraf, a university student from Algeria who learns best by building. My first public project is a chess engine that searches positions with minimax and alpha-beta pruning, and anyone can play it in the browser.",
-    'Away from the screen I play chess. It taught me that steady practice beats talent. Next, I want to bring code into the physical world with Arduino.',
+    "I'm Achraf, a developer from Algeria. I write web apps, desktop tools and Arduino firmware, and I publish the code on GitHub.",
   ],
 
   facts: [
     { label: 'From', value: 'Algeria' },
-    { label: 'Speaks', value: 'Arabic, English, French' },
+    { label: 'Speaks', value: 'Arabic, English' },
     { label: 'Field', value: 'Computer Science' },
     { label: 'Daily setup', value: 'Arch Linux' },
   ] as Fact[],
 
-  education: [
-    {
-      period: '[2025 – now]',
-      title: '[Degree / programme]',
-      place: '[University, City]',
-      detail: '[Average / ranking]',
-    },
-    {
-      period: '[2025]',
-      title: 'Baccalauréat — [stream]',
-      place: '[High school, City]',
-      detail: '[Grade, mention]',
-    },
-  ] as EducationItem[],
+  /** Empty list hides the Education section. */
+  education: [] as EducationItem[],
 
   skills: [
     'JavaScript',
+    'Python',
+    'C++ (Arduino)',
     'HTML & CSS',
     'Game-tree search (minimax, alpha-beta)',
+    'Electronics',
     'Linux (Arch)',
     'Git & GitHub',
     'AI-assisted development',
@@ -71,7 +60,6 @@ export const profile = {
   languages: [
     { name: 'Arabic', level: 'Native', score: 5 },
     { name: 'English', level: 'Very good', score: 4 },
-    { name: 'French', level: 'Beginner', score: 1 },
   ] as Language[],
 
   projects: [
@@ -92,6 +80,33 @@ export const profile = {
       art: 'chess',
     },
     {
+      title: 'Fire-fighting robot',
+      status: 'building',
+      summary: 'An Arduino robot that finds a flame by itself, drives to it and puts it out with water.',
+      details: [
+        'A 5-channel infrared sensor tells the robot where the flame is, left to right.',
+        'The firmware is a state machine: search, approach, spray, check, back off.',
+        'Safety limits: the pump never runs more than 4 s, and the robot raises an alarm after 4 failed attempts.',
+        'Firmware passes all 7 scenarios in a PC simulation. The hardware build is in progress.',
+      ],
+      tags: ['C++', 'Arduino', 'Robotics', 'Electronics'],
+      links: [{ label: 'Source code', href: 'https://github.com/h7p5/fire-fighting-robot' }],
+      art: 'robot',
+    },
+    {
+      title: 'Instagram uploader',
+      status: 'live',
+      summary: 'A desktop app to post Stories, Reels and Posts to Instagram from Windows or Linux.',
+      details: [
+        'Uploads several files at once, with an optional cover image and caption.',
+        'The password is never stored; only the login session is saved.',
+        'Written in Python with Tkinter.',
+      ],
+      tags: ['Python', 'Tkinter', 'Desktop app'],
+      links: [{ label: 'Source code', href: 'https://github.com/h7p5/insta-uploader' }],
+      art: 'uploader',
+    },
+    {
       title: 'Camera rep counter',
       status: 'planned',
       summary: 'Counts exercise reps from a webcam, so training logs itself.',
@@ -105,8 +120,6 @@ export const profile = {
     },
   ] as Project[],
 
-  interests: [
-    { title: 'Chess', text: 'Playing it is what made me want to build an engine that plays it.', icon: 'chess' },
-    { title: 'Arduino', text: 'Next step: electronics and code that act in the real world.', icon: 'circuit' },
-  ] as Interest[],
+  /** Empty list hides the "Beyond code" section. */
+  interests: [] as Interest[],
 }

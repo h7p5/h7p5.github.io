@@ -55,7 +55,7 @@ function Card({ children, className = '' }: { children: ReactNode; className?: s
 
 /* ---------- marquee ---------- */
 
-const MARQUEE = ['Computer Science', 'Chess', 'Arduino', 'Open source', 'Made in Algeria']
+const MARQUEE = ['Computer Science', 'Robotics', 'Arduino', 'Open source', 'Made in Algeria']
 
 function Marquee() {
   const items = [...MARQUEE, ...MARQUEE]
@@ -79,9 +79,9 @@ function Marquee() {
 
 /* ---------- sections ---------- */
 
-function About() {
+function About({ index }: { index: string }) {
   return (
-    <Section id="about" index="01" title="About me">
+    <Section id="about" index={index} title="About me">
       <div className="grid gap-10 lg:grid-cols-[1fr_280px] lg:gap-12">
         <div>
           <Reveal>
@@ -192,9 +192,9 @@ function ProjectBody({ p }: { p: Project }) {
   )
 }
 
-function Projects() {
+function Projects({ index }: { index: string }) {
   return (
-    <Section id="projects" index="02" title="Projects" kicker="Things I build because I want them to exist.">
+    <Section id="projects" index={index} title="Projects" kicker="Things I build because I want them to exist.">
       <div className="space-y-4">
         {profile.projects.map((p, i) => (
           <Reveal key={p.title} delay={i * 90}>
@@ -236,9 +236,9 @@ function InterestIcon({ icon }: { icon: Interest['icon'] }) {
   )
 }
 
-function Beyond() {
+function Beyond({ index }: { index: string }) {
   return (
-    <Section id="beyond" index="03" title="Beyond code">
+    <Section id="beyond" index={index} title="Beyond code">
       <div className="grid gap-4 sm:grid-cols-2">
         {profile.interests.map((it, i) => (
           <Reveal key={it.title} delay={i * 80} className="h-full">
@@ -258,9 +258,9 @@ function Beyond() {
   )
 }
 
-function Skills() {
+function Skills({ index }: { index: string }) {
   return (
-    <Section id="skills" index="04" title="Skills & languages">
+    <Section id="skills" index={index} title="Skills & languages">
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal>
           <SubHeading>Skills</SubHeading>
@@ -298,9 +298,9 @@ function Skills() {
   )
 }
 
-function Education() {
+function Education({ index }: { index: string }) {
   return (
-    <Section id="education" index="05" title="Education">
+    <Section id="education" index={index} title="Education">
       <ol className="relative border-l border-white/15 pl-8">
         {profile.education.map((e, i) => (
           <li key={e.title + e.period} className="relative pb-12 last:pb-0">
@@ -328,10 +328,10 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
   )
 }
 
-function Contact() {
+function Contact({ index }: { index: string }) {
   const { copied, copy } = useCopy()
   return (
-    <Section id="contact" index="06" title="Contact">
+    <Section id="contact" index={index} title="Contact">
       <Reveal>
         <p className="text-[17px] text-white/65 sm:text-[20px]">
           {profile.email ? 'The best way to reach me is by email.' : 'Everything I build lives on GitHub.'}
@@ -357,7 +357,7 @@ function Contact() {
           target="_blank"
           rel="noreferrer"
           className={`group inline-flex items-center gap-4 tracking-[-0.06em] text-white transition-opacity hover:opacity-70 ${
-            profile.email ? 'mt-8 text-[clamp(22px,3vw,32px)]' : 'mt-5 text-[clamp(32px,7vw,84px)]'
+            profile.email ? 'mt-8 text-[clamp(22px,3vw,32px)]' : 'mt-5 text-[clamp(28px,5vw,64px)]'
           }`}
           style={heading}
         >
@@ -367,21 +367,46 @@ function Contact() {
             ↗
           </span>
         </a>
+
+        {profile.socials.length > 0 && (
+          <ul className="mt-8 flex flex-wrap gap-2">
+            {profile.socials.map((s) => (
+              <li key={s.href}>
+                <a
+                  href={s.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-5 py-2 text-[15px] text-white transition-colors duration-200 hover:bg-white hover:text-black"
+                >
+                  {s.label} <span aria-hidden="true">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </Reveal>
     </Section>
   )
 }
 
 export default function Sections() {
+  // Sections with no content are skipped, and the rest are numbered in order.
+  const visible = (
+    [
+      ['about', About, true],
+      ['projects', Projects, profile.projects.length > 0],
+      ['beyond', Beyond, profile.interests.length > 0],
+      ['skills', Skills, true],
+      ['education', Education, profile.education.length > 0],
+      ['contact', Contact, true],
+    ] as const
+  ).filter(([, , show]) => show)
   return (
     <main className="section-grid relative bg-[#0c0a09] text-white">
       <Marquee />
-      <About />
-      <Projects />
-      <Beyond />
-      <Skills />
-      <Education />
-      <Contact />
+      {visible.map(([key, Comp], i) => (
+        <Comp key={key} index={String(i + 1).padStart(2, '0')} />
+      ))}
       <footer className="border-t border-white/10 px-5 py-8 text-[14px] text-white/40 sm:px-8 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-2">
           <span>© {new Date().getFullYear()} {profile.name}</span>

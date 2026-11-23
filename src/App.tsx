@@ -16,14 +16,14 @@ const NAV_LINKS: { label: string; href: string; external?: boolean }[] = [
   { label: 'About', href: '#about' },
   { label: 'Projects', href: '#projects' },
   { label: 'Skills', href: '#skills' },
-  { label: 'Education', href: '#education' },
+  ...(profile.education.length ? [{ label: 'Education', href: '#education' }] : []),
   ...(CHESS_DEMO ? [{ label: 'Live Demo', href: CHESS_DEMO, external: true }] : []),
 ]
 
 /** Decorative stats on the arcs. r / from / to / dot are the arc radius and angles (degrees). */
 const STATS: { r: number; from: number; to: number; dot: number; value: string; suffix?: string; label: string }[] = [
-  { r: 330, from: -92, to: 16, dot: -46, value: '3', label: 'LANGUAGES SPOKEN' },
-  { r: 395, from: -56, to: 60, dot: 2, value: '2', label: 'PROJECTS' },
+  { r: 330, from: -92, to: 16, dot: -46, value: String(profile.languages.length), label: 'LANGUAGES SPOKEN' },
+  { r: 395, from: -56, to: 60, dot: 2, value: String(profile.projects.filter((p) => p.status !== 'planned').length), label: 'PROJECTS' },
   { r: 460, from: -14, to: 72, dot: 44, value: '100', suffix: '%', label: 'OPEN SOURCE' },
 ]
 const ARC_CENTER = { x: -110, y: 300 }
@@ -448,19 +448,18 @@ function Hero() {
       {/* 5. Text */}
       <div className="absolute bottom-12 left-5 z-50 max-w-[300px] sm:bottom-16 sm:left-8 sm:max-w-md md:bottom-24 md:left-12">
         <p className="hero-rise text-[11px] font-semibold tracking-[0.12em] text-white/90 sm:text-xs" style={{ animationDelay: '0.15s' }}>
-          Student developer <span className="italic">from Algeria</span>
+          Developer <span className="italic">from Algeria</span>
         </p>
         <h1
           className="hero-rise mt-4 text-4xl leading-[1.05] tracking-[-0.08em] text-white sm:text-5xl md:text-6xl"
           style={{ animationDelay: '0.3s' }}
         >
           I'm {profile.name}.
-          <br />I build things
-          <br />I care about
+          <br />I write code
+          <br />and build robots.
         </h1>
         <p className="hero-rise mt-5 text-sm leading-relaxed text-white/90 sm:text-base" style={{ animationDelay: '0.5s' }}>
-          A chess engine you can play in the browser, a camera rep counter next, and electronics with Arduino after
-          that. One steady step at a time.
+          Web apps, desktop tools and Arduino projects.
         </p>
         <div className="hero-rise mt-7" style={{ animationDelay: '0.7s' }}>
           <a
