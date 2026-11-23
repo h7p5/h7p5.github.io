@@ -29,15 +29,12 @@ export const profile = {
   email: '',
   github: { handle: 'h7p5', href: 'https://github.com/h7p5' },
   /** Shown in Contact next to GitHub. Empty list hides the row. */
-  socials: [] as Link[],
+  socials: [{ label: 'Instagram', href: 'https://www.instagram.com/h_7p5/' }] as Link[],
 
-  about: [
-    "I'm Achraf, a developer from Algeria. I write web apps, desktop tools and Arduino firmware, and I publish the code on GitHub.",
-  ],
+  about: ["Hey, I'm Achraf. I like building stuff, and the code is all on GitHub."],
 
   facts: [
     { label: 'From', value: 'Algeria' },
-    { label: 'Speaks', value: 'Arabic, English' },
     { label: 'Field', value: 'Computer Science' },
     { label: 'Daily setup', value: 'Arch Linux' },
   ] as Fact[],
@@ -57,10 +54,8 @@ export const profile = {
     'AI-assisted development',
   ],
 
-  languages: [
-    { name: 'Arabic', level: 'Native', score: 5 },
-    { name: 'English', level: 'Very good', score: 4 },
-  ] as Language[],
+  /** Empty list hides the Languages column and the hero stat. */
+  languages: [] as Language[],
 
   projects: [
     {

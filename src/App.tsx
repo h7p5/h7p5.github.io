@@ -25,7 +25,7 @@ const STATS: { r: number; from: number; to: number; dot: number; value: string; 
   { r: 330, from: -92, to: 16, dot: -46, value: String(profile.languages.length), label: 'LANGUAGES SPOKEN' },
   { r: 395, from: -56, to: 60, dot: 2, value: String(profile.projects.filter((p) => p.status !== 'planned').length), label: 'PROJECTS' },
   { r: 460, from: -14, to: 72, dot: 44, value: '100', suffix: '%', label: 'OPEN SOURCE' },
-]
+].filter((s) => s.value !== '0')
 const ARC_CENTER = { x: -110, y: 300 }
 
 /* Brush-trail reveal */

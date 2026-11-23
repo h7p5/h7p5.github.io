@@ -55,7 +55,7 @@ function Card({ children, className = '' }: { children: ReactNode; className?: s
 
 /* ---------- marquee ---------- */
 
-const MARQUEE = ['Computer Science', 'Robotics', 'Arduino', 'Open source', 'Made in Algeria']
+const MARQUEE = ['Computer Science', 'Robotics', 'Arduino', 'Python', 'Open source']
 
 function Marquee() {
   const items = [...MARQUEE, ...MARQUEE]
@@ -259,9 +259,10 @@ function Beyond({ index }: { index: string }) {
 }
 
 function Skills({ index }: { index: string }) {
+  const hasLanguages = profile.languages.length > 0
   return (
-    <Section id="skills" index={index} title="Skills & languages">
-      <div className="grid gap-12 lg:grid-cols-2">
+    <Section id="skills" index={index} title={hasLanguages ? 'Skills & languages' : 'Skills'}>
+      <div className={`grid gap-12 ${hasLanguages ? 'lg:grid-cols-2' : ''}`}>
         <Reveal>
           <SubHeading>Skills</SubHeading>
           <ul className="flex flex-wrap gap-2">
@@ -272,6 +273,7 @@ function Skills({ index }: { index: string }) {
             ))}
           </ul>
         </Reveal>
+        {hasLanguages && (
         <Reveal delay={100}>
           <SubHeading>Languages</SubHeading>
           <ul className="space-y-4">
@@ -293,6 +295,7 @@ function Skills({ index }: { index: string }) {
             ))}
           </ul>
         </Reveal>
+        )}
       </div>
     </Section>
   )
@@ -410,7 +413,6 @@ export default function Sections() {
       <footer className="border-t border-white/10 px-5 py-8 text-[14px] text-white/40 sm:px-8 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-2">
           <span>© {new Date().getFullYear()} {profile.name}</span>
-          <span>Made in Algeria <span className="text-[var(--accent)]">✳︎</span></span>
         </div>
       </footer>
     </main>
