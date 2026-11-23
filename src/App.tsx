@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import Sections from './components/Sections'
+import { CountUp, Magnetic, ScrollProgress, SplitChars } from './components/fx'
+import { clamp, onFrame, reducedMotion } from './lib/motion'
 import { profile } from './data/profile'
 
 /*
@@ -53,36 +55,104 @@ function Logo({ size = 22 }: { size?: number }) {
 
 /* ---------- navbar ---------- */
 
+/** Which section is in the middle of the screen right now ('' while on the hero). */
+function useActiveSection(ids: string[]) {
+  const [active, setActive] = useState('')
+  useEffect(() => {
+    const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[]
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setActive(e.target.id)
+      },
+      { rootMargin: '-45% 0px -50% 0px' },
+    )
+    els.forEach((el) => io.observe(el))
+    const hero = document.getElementById('top')
+    const heroIo = new IntersectionObserver(([e]) => e.isIntersecting && setActive(''), { rootMargin: '-50% 0px -50% 0px' })
+    if (hero) heroIo.observe(hero)
+    return () => {
+      io.disconnect()
+      heroIo.disconnect()
+    }
+  }, [ids])
+  return active
+}
+
+const SECTION_IDS = NAV_LINKS.filter((l) => l.href.startsWith('#')).map((l) => l.href.slice(1))
+
 function Navbar() {
   const [open, setOpen] = useState(false)
+  const [hidden, setHidden] = useState(false)
+  const active = useActiveSection(SECTION_IDS)
   const linkProps = (external?: boolean) => (external ? { target: '_blank', rel: 'noreferrer' } : {})
+
+  // Slide away while scrolling down, come back as soon as the visitor scrolls up.
+  useEffect(() => {
+    let last = false
+    return onFrame(({ y, v, vh }) => {
+      const next = y > vh * 0.6 && v > 0.5 ? true : v < -0.5 || y < vh * 0.6 ? false : last
+      if (next !== last) {
+        last = next
+        setHidden(next)
+      }
+    })
+  }, [])
+
+  // The white pill glides under whichever link matches the section on screen.
+  const pillHost = useRef<HTMLDivElement>(null)
+  const [pill, setPill] = useState({ x: 0, w: 0, show: false })
+  useEffect(() => {
+    const measure = () => {
+      const el = pillHost.current?.querySelector<HTMLElement>(`a[href="#${active}"]`)
+      if (!el || !el.offsetWidth) return setPill((p) => ({ ...p, show: false }))
+      setPill({ x: el.offsetLeft, w: el.offsetWidth, show: true })
+    }
+    measure()
+    // Link widths change when the web font arrives or the window crosses the desktop breakpoint.
+    document.fonts?.ready.then(measure)
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [active])
 
   return (
     <>
-      <nav className="fixed top-0 right-0 left-0 z-50 flex items-center justify-between p-4 sm:p-5 md:justify-center">
+      <nav
+        className={`nav-shell fixed top-0 right-0 left-0 z-50 flex items-center justify-between p-4 sm:p-5 md:justify-center ${
+          hidden && !open ? 'is-hidden' : ''
+        }`}
+      >
         {/* Desktop: one centred pill */}
         <div className="nav-drop hidden items-center gap-1 rounded-full bg-black/60 py-2 pr-2 pl-3 backdrop-blur-md md:flex">
           <a href="#top" aria-label={`${profile.name}, back to top`} className="mr-2 flex items-center">
             <Logo />
           </a>
-          {NAV_LINKS.map((l, i) => (
+          <div ref={pillHost} className="relative flex items-center gap-1">
+            <span
+              aria-hidden="true"
+              className="nav-pill absolute top-0 left-0 h-full rounded-full bg-white/12"
+              style={{ transform: `translateX(${pill.x}px)`, width: pill.w, opacity: pill.show ? 1 : 0 }}
+            />
+            {NAV_LINKS.map((l) => (
+              <a
+                key={l.label}
+                href={l.href}
+                {...linkProps(l.external)}
+                className={`relative rounded-full px-3 py-1.5 text-sm font-medium transition-colors duration-300 hover:text-white ${
+                  l.href === `#${active}` ? 'text-white' : 'text-gray-300'
+                }`}
+              >
+                {l.label}
+              </a>
+            ))}
+          </div>
+          <Magnetic strength={0.25}>
             <a
-              key={l.label}
-              href={l.href}
-              {...linkProps(l.external)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white ${
-                i === 0 ? 'text-white' : 'text-gray-300'
-              }`}
+              href="#contact"
+              className="ml-1 rounded-full bg-white px-5 py-1.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100"
             >
-              {l.label}
+              Connect
             </a>
-          ))}
-          <a
-            href="#contact"
-            className="ml-1 rounded-full bg-white px-5 py-1.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100"
-          >
-            Connect
-          </a>
+          </Magnetic>
         </div>
 
         {/* Mobile: logo pill + toggle pill */}
@@ -100,32 +170,42 @@ function Navbar() {
           aria-expanded={open}
           className="nav-drop flex cursor-pointer items-center rounded-full bg-black/60 p-2.5 text-white backdrop-blur-md md:hidden"
         >
-          {open ? <X size={22} /> : <Menu size={22} />}
+          <span className="relative block h-[22px] w-[22px]">
+            <Menu size={22} className={`absolute inset-0 transition-all duration-500 ${open ? 'scale-50 rotate-90 opacity-0' : ''}`} />
+            <X size={22} className={`absolute inset-0 transition-all duration-500 ${open ? '' : 'scale-50 -rotate-90 opacity-0'}`} />
+          </span>
         </button>
       </nav>
 
-      {open && (
-        <div className="fixed top-0 right-0 left-0 z-40 bg-white px-5 pt-16 pb-6 shadow-lg md:hidden">
-          {NAV_LINKS.map((l) => (
-            <a
-              key={l.label}
-              href={l.href}
-              {...linkProps(l.external)}
-              onClick={() => setOpen(false)}
-              className="block border-b border-gray-100 py-3 text-gray-800"
-            >
-              {l.label}
-            </a>
-          ))}
+      <div
+        className={`mobile-menu fixed top-0 right-0 left-0 z-40 bg-white px-5 pt-16 pb-6 shadow-lg md:hidden ${open ? 'is-open' : ''}`}
+        aria-hidden={!open}
+      >
+        {NAV_LINKS.map((l, i) => (
           <a
-            href="#contact"
+            key={l.label}
+            href={l.href}
+            {...linkProps(l.external)}
+            tabIndex={open ? 0 : -1}
             onClick={() => setOpen(false)}
-            className="mt-5 inline-block rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white"
+            data-st
+            style={{ ['--i' as string]: i }}
+            className="block border-b border-gray-100 py-3 text-gray-800"
           >
-            Connect
+            {l.label}
           </a>
-        </div>
-      )}
+        ))}
+        <a
+          href="#contact"
+          tabIndex={open ? 0 : -1}
+          onClick={() => setOpen(false)}
+          data-st
+          style={{ ['--i' as string]: NAV_LINKS.length }}
+          className="mt-5 inline-block rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white"
+        >
+          Connect
+        </a>
+      </div>
     </>
   )
 }
@@ -189,7 +269,7 @@ function StatsArc() {
                 letterSpacing="-1"
                 style={{ animationDelay: `${markDelay + 0.15}s` }}
               >
-                {s.value}
+                <CountUp to={Number(s.value)} delay={(markDelay + 0.15) * 1000} />
                 {s.suffix && (
                   <tspan fontSize="19" dy="-10">
                     {s.suffix}
@@ -223,6 +303,32 @@ function Hero() {
   const heroRef = useRef<HTMLElement>(null)
   const patternRef = useRef<SVGPatternElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const imageLayerRef = useRef<HTMLDivElement>(null)
+  const textRef = useRef<HTMLDivElement>(null)
+  const statsRef = useRef<HTMLDivElement>(null)
+  const dimRef = useRef<HTMLDivElement>(null)
+
+  // Scrolling away from the hero: the portrait sinks slower than the page (depth),
+  // the text lifts and fades, and the whole scene dims into the dark sections below.
+  useEffect(() => {
+    if (reducedMotion) return
+    let lastY = -1
+    return onFrame(({ y, vh }) => {
+      if (y === lastY || y > vh * 1.2) return
+      lastY = y
+      const p = clamp(y / vh, 0, 1)
+      if (imageLayerRef.current) imageLayerRef.current.style.transform = `translate3d(0, ${(y * 0.32).toFixed(1)}px, 0)`
+      if (textRef.current) {
+        textRef.current.style.transform = `translate3d(0, ${(-y * 0.18).toFixed(1)}px, 0)`
+        textRef.current.style.opacity = String(clamp(1 - p * 1.7, 0, 1))
+      }
+      if (statsRef.current) {
+        statsRef.current.style.transform = `translate3d(0, ${(-y * 0.08).toFixed(1)}px, 0)`
+        statsRef.current.style.opacity = String(clamp(1 - p * 1.4, 0, 1))
+      }
+      if (dimRef.current) dimRef.current.style.opacity = String(clamp(p * 0.85, 0, 0.85))
+    })
+  }, [])
 
   // One rAF loop drives both mouse effects: grid parallax and the brush-trail reveal.
   useEffect(() => {
@@ -285,7 +391,7 @@ function Hero() {
     }
 
     const pointerTo = (clientX: number, clientY: number, now: number) => {
-      const r = hero.getBoundingClientRect()
+      const r = canvas.getBoundingClientRect()
       const x = clientX - r.left
       const y = clientY - r.top
       if (last) {
@@ -425,16 +531,19 @@ function Hero() {
         <rect width="100%" height="100%" fill="url(#hero-grid)" />
       </svg>
 
-      {/* 2. Base image with a Ken Burns intro */}
-      <div
-        className="ken-burns absolute inset-0 z-10 bg-cover bg-center"
-        style={{ backgroundImage: `url("${BG_IMAGE_1}")` }}
-        role="img"
-        aria-label={`3D portrait of ${profile.name} on an orange background`}
-      />
+      {/* Parallax layer: portrait + brush canvas move together so they stay aligned */}
+      <div ref={imageLayerRef} className="will-move absolute inset-0 z-10">
+        {/* 2. Base image with a Ken Burns intro */}
+        <div
+          className="ken-burns absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url("${BG_IMAGE_1}")` }}
+          role="img"
+          aria-label={`3D portrait of ${profile.name} on an orange background`}
+        />
 
-      {/* 3. Cyber image, painted only inside the brush trail that follows the pointer */}
-      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-30 h-full w-full" aria-hidden="true" />
+        {/* 3. Cyber image, painted only inside the brush trail that follows the pointer */}
+        <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true" />
+      </div>
 
       {/* Soft shade behind the text so white copy stays readable */}
       <div
@@ -442,35 +551,42 @@ function Hero() {
         aria-hidden="true"
       />
 
+      {/* Darkens as you scroll down, so the hero melts into the sections */}
+      <div ref={dimRef} className="pointer-events-none absolute inset-0 z-40 bg-[#0c0a09]" style={{ opacity: 0 }} aria-hidden="true" />
+
       {/* 4. Stats on arcs */}
-      <StatsArc />
+      <div ref={statsRef} className="will-move pointer-events-none absolute inset-0 z-50">
+        <StatsArc />
+      </div>
 
       {/* 5. Text */}
-      <div className="absolute bottom-12 left-5 z-50 max-w-[300px] sm:bottom-16 sm:left-8 sm:max-w-md md:bottom-24 md:left-12">
+      <div
+        ref={textRef}
+        className="will-move absolute bottom-12 left-5 z-50 max-w-[300px] sm:bottom-16 sm:left-8 sm:max-w-md md:bottom-24 md:left-12"
+      >
         <p className="hero-rise text-[11px] font-semibold tracking-[0.12em] text-white/90 sm:text-xs" style={{ animationDelay: '0.15s' }}>
           Developer <span className="italic">from Algeria</span>
         </p>
-        <h1
-          className="hero-rise mt-4 text-4xl leading-[1.05] tracking-[-0.08em] text-white sm:text-5xl md:text-6xl"
-          style={{ animationDelay: '0.3s' }}
-        >
-          I'm {profile.name}.
+        <h1 className="mt-4 text-4xl leading-[1.05] tracking-[-0.08em] text-white sm:text-5xl md:text-6xl">
+          <SplitChars text={`I'm ${profile.name}.`} delay={0.3} />
         </h1>
         <p className="hero-rise mt-5 text-sm leading-relaxed text-white/90 sm:text-base" style={{ animationDelay: '0.5s' }}>
           Web apps, desktop tools and Arduino projects.
         </p>
-        <div className="hero-rise mt-7" style={{ animationDelay: '0.7s' }}>
-          <a
-            href="#projects"
-            className="group relative inline-flex overflow-hidden rounded-full bg-white px-7 py-3 text-sm font-semibold text-gray-900 shadow-lg shadow-black/20 transition-transform duration-300 hover:scale-[1.04] active:scale-95 sm:px-8 sm:py-3.5"
-            style={{ transitionTimingFunction: EASE_OUT }}
-          >
-            <span className="relative z-10">See my work</span>
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full"
-            />
-          </a>
+        <div className="hero-rise mt-7" style={{ animationDelay: '0.75s' }}>
+          <Magnetic strength={0.35}>
+            <a
+              href="#projects"
+              className="group relative inline-flex overflow-hidden rounded-full bg-white px-7 py-3 text-sm font-semibold text-gray-900 shadow-lg shadow-black/20 transition-transform duration-300 hover:scale-[1.04] active:scale-95 sm:px-8 sm:py-3.5"
+              style={{ transitionTimingFunction: EASE_OUT }}
+            >
+              <span className="relative z-10">See my work</span>
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+              />
+            </a>
+          </Magnetic>
         </div>
       </div>
     </section>
@@ -486,6 +602,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white tracking-[-0.02em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+      <ScrollProgress />
       <Navbar />
       <Hero />
       <Sections />

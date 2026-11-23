@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300..800;1,400;1,500&display=swap');
 @import 'tailwindcss';
 
 /* Declared for completeness; JetBrains Mono is what actually renders. */
@@ -16,6 +15,9 @@
   --font-body: 'JetBrains Mono', monospace;
   /* Accent pulled from the orange-red hero imagery. */
   --accent: #ff5a1f;
+  /* One easing family for the whole site: fast start, long soft landing. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 * {
@@ -23,10 +25,6 @@
 }
 .font-helvetica-neue {
   font-family: 'JetBrains Mono', monospace;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 body {
@@ -141,27 +139,195 @@ body {
   animation: fadeIn 0.7s ease both;
 }
 
-/* ---------- Sections below the hero ---------- */
+/* ---------- Hero heading: letters rise out of a mask ---------- */
+
+.char-mask {
+  display: inline-block;
+  overflow-x: visible;
+  overflow-y: clip;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+  vertical-align: bottom;
+}
+@keyframes charRise {
+  from {
+    transform: translateY(115%) rotate(8deg);
+  }
+  to {
+    transform: none;
+  }
+}
+.char-rise {
+  display: inline-block;
+  transform-origin: 0 100%;
+  animation: charRise 1.15s var(--ease-out) both;
+}
+
+/* ---------- Scroll reveals ---------- */
 
 .reveal {
-  opacity: 0;
-  transform: translateY(18px);
   transition:
-    opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
-    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+    opacity 1.1s var(--ease-out) var(--d, 0ms),
+    transform 1.3s var(--ease-out) var(--d, 0ms),
+    filter 1.1s var(--ease-out) var(--d, 0ms);
+}
+.reveal-up {
+  opacity: 0;
+  transform: translate3d(0, 34px, 0);
+}
+.reveal-text {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  filter: blur(8px);
+}
+.reveal-card {
+  opacity: 0;
+  transform: perspective(1400px) translate3d(0, 80px, 0) rotateX(9deg) scale(0.96);
+  transform-origin: 50% 0;
 }
 .reveal.is-shown {
   opacity: 1;
   transform: none;
+  filter: none;
 }
 
-.marquee-track {
-  animation: marquee 45s linear infinite;
+/* Stagger: each child marked data-st pops in after the one before it. */
+.reveal-stagger [data-st] {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0) scale(0.94);
+  transition:
+    opacity 0.7s var(--ease-out),
+    transform 0.9s var(--ease-out);
+  transition-delay: calc(var(--d, 0ms) + var(--i, 0) * 55ms);
 }
-@keyframes marquee {
-  to {
-    transform: translateX(-50%);
+.reveal-stagger.is-shown [data-st] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Section titles slide up out of a mask; the index line draws itself. */
+.mask-line {
+  display: block;
+  overflow-y: clip;
+  padding-bottom: 0.08em;
+}
+.mask-line > span {
+  display: inline-block;
+  transform: translate3d(0, 110%, 0);
+  transition: transform 1.2s var(--ease-out) calc(var(--d, 0ms) + 80ms);
+}
+.is-shown .mask-line > span {
+  transform: none;
+}
+.draw-line {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.2s var(--ease-in-out) 200ms;
+}
+.is-shown .draw-line {
+  transform: scaleX(1);
+}
+
+/* ---------- Cards: cursor spotlight + glowing edge ---------- */
+
+.spot {
+  position: relative;
+}
+.spot > * {
+  position: relative;
+}
+.spot::before,
+.spot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out);
+}
+.spot::before {
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 90, 31, 0.09), transparent 45%);
+}
+.spot::after {
+  padding: 1px;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 90, 31, 0.75), transparent 60%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: 2;
+}
+@media (hover: hover) {
+  .spot:hover::before,
+  .spot:hover::after {
+    opacity: 1;
   }
+}
+
+/* ---------- Links: underline retracts on hover, then redraws from the left ---------- */
+
+.link-line {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 1px;
+  padding-bottom: 0.12em;
+  transition: background-size 0.7s var(--ease-in-out);
+}
+.group:hover .link-line,
+.link-line:hover {
+  background-position: 100% 100%;
+  background-size: 0% 1px;
+}
+
+/* ---------- Navbar ---------- */
+
+.nav-shell {
+  transition: transform 0.7s var(--ease-out);
+}
+.nav-shell.is-hidden {
+  transform: translate3d(0, -140%, 0);
+}
+.nav-pill {
+  transition:
+    transform 0.6s var(--ease-out),
+    width 0.6s var(--ease-out),
+    opacity 0.4s ease;
+}
+
+/* Mobile menu: slides down, links follow one by one. */
+.mobile-menu {
+  opacity: 0;
+  transform: translate3d(0, -16px, 0);
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    transform 0.6s var(--ease-out);
+}
+.mobile-menu.is-open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.mobile-menu [data-st] {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition:
+    opacity 0.4s ease,
+    transform 0.6s var(--ease-out);
+}
+.mobile-menu.is-open [data-st] {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(80ms + var(--i, 0) * 50ms);
+}
+
+/* Moved every frame: give them their own compositor layer. */
+.marquee-track,
+.will-move {
+  will-change: transform;
 }
 
 /* Push-up loop in the rep counter art */
@@ -196,8 +362,8 @@ body {
   .arc-line,
   .arc-dot,
   .arc-text,
-  .marquee-track,
-  .pushup {
+  .pushup,
+  .char-rise {
     animation: none;
     opacity: 1;
     transform: none;
@@ -208,9 +374,14 @@ body {
     animation: none;
     opacity: 0.35;
   }
-  .reveal {
+  .reveal,
+  .reveal-stagger [data-st],
+  .mask-line > span,
+  .draw-line,
+  .mobile-menu [data-st] {
     opacity: 1;
     transform: none;
+    filter: none;
     transition: none;
   }
 }

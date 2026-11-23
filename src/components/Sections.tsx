@@ -1,9 +1,11 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { finePointer, lerp, onFrame, reducedMotion } from '../lib/motion'
 import { profile, type Interest, type Project, type ProjectStatus } from '../data/profile'
 import { useCopy } from '../hooks/useCopy'
 import CopyIcon from './CopyIcon'
 import ProjectArt from './ProjectArt'
 import Reveal from './Reveal'
+import { Magnetic, spotlight, useParallax, useTilt } from './fx'
 
 const heading = { fontFamily: 'var(--font-heading)' }
 
@@ -28,10 +30,12 @@ function Section({
         <Reveal className="md:sticky md:top-28 md:self-start">
           <p className="flex items-center gap-3 text-[13px] text-[var(--accent)] tabular-nums">
             <span>{index}</span>
-            <span className="h-px w-10 bg-[var(--accent)]/60" />
+            <span className="draw-line h-px w-10 bg-[var(--accent)]/60" />
           </p>
           <h2 className="mt-3 text-[30px] leading-[1.05] tracking-[-0.07em] text-white sm:text-[36px]" style={heading}>
-            {title}
+            <span className="mask-line">
+              <span>{title}</span>
+            </span>
           </h2>
           {kicker && <p className="mt-3 max-w-[240px] text-[15px] leading-snug text-white/50">{kicker}</p>}
         </Reveal>
@@ -45,9 +49,24 @@ function SubHeading({ children }: { children: ReactNode }) {
   return <h3 className="mb-5 text-[12px] tracking-[0.16em] text-white/45 uppercase">{children}</h3>
 }
 
-function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+function Card({
+  children,
+  className = '',
+  tilt = false,
+}: {
+  children: ReactNode
+  className?: string
+  /** Lean towards the cursor in 3D (big cards only). */
+  tilt?: boolean
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useTilt(ref, tilt)
   return (
-    <div className={`rounded-2xl bg-white/[0.035] ring-1 ring-white/10 transition duration-300 hover:bg-white/[0.05] hover:ring-[var(--accent)]/50 ${className}`}>
+    <div
+      ref={ref}
+      onPointerMove={finePointer ? spotlight : undefined}
+      className={`spot rounded-2xl bg-white/[0.035] ring-1 ring-white/10 transition-[background-color,box-shadow] duration-500 hover:bg-white/[0.05] hover:ring-white/20 ${className}`}
+    >
       {children}
     </div>
   )
@@ -57,11 +76,38 @@ function Card({ children, className = '' }: { children: ReactNode; className?: s
 
 const MARQUEE = ['Computer Science', 'Robotics', 'Arduino', 'Python', 'Open source']
 
+/** Drifts on its own, speeds up with the scroll, reverses when you scroll up, and leans with the speed. */
 function Marquee() {
   const items = [...MARQUEE, ...MARQUEE]
+  const track = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = track.current
+    if (!el || reducedMotion) return
+    let x = 0
+    let dir = -1
+    let skew = 0
+    let half = el.scrollWidth / 2
+    let last = performance.now()
+    const ro = new ResizeObserver(() => (half = el.scrollWidth / 2))
+    ro.observe(el)
+    const off = onFrame(({ v, t }) => {
+      const dt = Math.min(64, t - last) / 1000
+      last = t
+      if (Math.abs(v) > 0.3) dir = v > 0 ? -1 : 1
+      x += dir * (half / 45) * dt + dir * Math.min(Math.abs(v), 60) * 0.35
+      if (x <= -half) x += half
+      if (x > 0) x -= half
+      skew = lerp(skew, Math.max(-7, Math.min(7, -v * 0.22)), 0.1)
+      el.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0) skewX(${skew.toFixed(2)}deg)`
+    })
+    return () => {
+      off()
+      ro.disconnect()
+    }
+  }, [])
   return (
     <div aria-hidden="true" className="overflow-hidden border-y border-white/10 py-6 select-none">
-      <div className="marquee-track flex w-max">
+      <div ref={track} className="marquee-track flex w-max">
         {items.map((t, i) => (
           <span
             key={i}
@@ -79,12 +125,28 @@ function Marquee() {
 
 /* ---------- sections ---------- */
 
+function Avatar() {
+  const img = useRef<HTMLImageElement>(null)
+  useParallax(img, 0.06, 22)
+  return (
+    <div className="aspect-[4/5] w-full overflow-hidden rounded-3xl ring-1 ring-white/10">
+      <img
+        ref={img}
+        src="/images/avatar-1.jpg"
+        alt={`3D portrait of ${profile.name}`}
+        loading="lazy"
+        className="will-move h-full w-full scale-[1.12] object-cover object-[50%_20%]"
+      />
+    </div>
+  )
+}
+
 function About({ index }: { index: string }) {
   return (
     <Section id="about" index={index} title="About me">
       <div className="grid gap-10 lg:grid-cols-[1fr_280px] lg:gap-12">
         <div>
-          <Reveal>
+          <Reveal variant="text">
             <div className="space-y-6 text-[17px] leading-[1.6] text-white/85 sm:text-[20px]">
               {profile.about.map((p) => (
                 <p key={p}>{p}</p>
@@ -104,20 +166,17 @@ function About({ index }: { index: string }) {
         </div>
         <Reveal delay={120} className="order-first lg:order-none">
           <div className="relative max-w-[280px]">
-            <img
-              src="/images/avatar-1.jpg"
-              alt={`3D portrait of ${profile.name}`}
-              loading="lazy"
-              className="aspect-[4/5] w-full rounded-3xl object-cover object-[50%_20%] ring-1 ring-white/10"
-            />
-            <a
-              href={profile.github.href}
-              target="_blank"
-              rel="noreferrer"
-              className="absolute -bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] text-black shadow-lg transition-colors hover:bg-black hover:text-white"
-            >
-              <GitHubIcon /> @{profile.github.handle}
-            </a>
+            <Avatar />
+            <Magnetic strength={0.3} className="absolute -bottom-4 left-4">
+              <a
+                href={profile.github.href}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] text-black shadow-lg transition-colors hover:bg-black hover:text-white"
+              >
+                <GitHubIcon /> @{profile.github.handle}
+              </a>
+            </Magnetic>
           </div>
         </Reveal>
       </div>
@@ -171,23 +230,35 @@ function ProjectBody({ p }: { p: Project }) {
         {p.links.length > 0 && (
           <div className="mt-6 flex flex-wrap gap-2">
             {p.links.map((l, i) => (
-              <a
-                key={l.href}
-                href={l.href}
-                target="_blank"
-                rel="noreferrer"
-                className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-[15px] transition-colors duration-200 ${
-                  i === 0
-                    ? 'bg-white text-black hover:bg-black hover:text-white hover:ring-1 hover:ring-white/30'
-                    : 'border border-white/30 text-white hover:bg-white hover:text-black'
-                }`}
-              >
-                {l.label} <span aria-hidden="true">↗</span>
-              </a>
+              <Magnetic key={l.href} strength={0.25}>
+                <a
+                  href={l.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-[15px] transition-colors duration-200 ${
+                    i === 0
+                      ? 'bg-white text-black hover:bg-black hover:text-white hover:ring-1 hover:ring-white/30'
+                      : 'border border-white/30 text-white hover:bg-white hover:text-black'
+                  }`}
+                >
+                  {l.label} <span aria-hidden="true">↗</span>
+                </a>
+              </Magnetic>
             ))}
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/** The project picture drifts a little slower than the card as you scroll. */
+function ArtParallax({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useParallax(ref, 0.05, 22)
+  return (
+    <div ref={ref} className="will-move h-full scale-[1.1]">
+      {children}
     </div>
   )
 }
@@ -197,15 +268,17 @@ function Projects({ index }: { index: string }) {
     <Section id="projects" index={index} title="Projects" kicker="Things I build because I want them to exist.">
       <div className="space-y-4">
         {profile.projects.map((p, i) => (
-          <Reveal key={p.title} delay={i * 90}>
-            <Card className="grid overflow-hidden lg:grid-cols-[1.05fr_1fr]">
+          <Reveal key={p.title} variant="card">
+            <Card tilt className="grid overflow-hidden lg:grid-cols-[1.05fr_1fr]">
               {/* Art on the left for odd cards, on the right for even ones (desktop). */}
               <div
-                className={`aspect-[4/3] border-b border-white/10 lg:aspect-auto lg:min-h-[380px] lg:border-b-0 ${
+                className={`aspect-[4/3] overflow-hidden border-b border-white/10 bg-[#1f1f23] lg:aspect-auto lg:min-h-[380px] lg:border-b-0 ${
                   i % 2 ? 'lg:order-last lg:border-l' : 'lg:border-r'
                 }`}
               >
-                <ProjectArt kind={p.art} />
+                <ArtParallax>
+                  <ProjectArt kind={p.art} />
+                </ArtParallax>
               </div>
               <ProjectBody p={p} />
             </Card>
@@ -263,11 +336,16 @@ function Skills({ index }: { index: string }) {
   return (
     <Section id="skills" index={index} title={hasLanguages ? 'Skills & languages' : 'Skills'}>
       <div className={`grid gap-12 ${hasLanguages ? 'lg:grid-cols-2' : ''}`}>
-        <Reveal>
+        <Reveal variant="stagger">
           <SubHeading>Skills</SubHeading>
           <ul className="flex flex-wrap gap-2">
-            {profile.skills.map((s) => (
-              <li key={s} className="rounded-full bg-white/[0.06] px-4 py-2 text-[15px] text-white/90 ring-1 ring-white/10">
+            {profile.skills.map((s, i) => (
+              <li
+                key={s}
+                data-st
+                style={{ ['--i' as string]: i }}
+                className="rounded-full bg-white/[0.06] px-4 py-2 text-[15px] text-white/90 ring-1 ring-white/10 transition-colors duration-300 hover:bg-white hover:text-black"
+              >
                 {s}
               </li>
             ))}
@@ -347,7 +425,7 @@ function Contact({ index }: { index: string }) {
             className="mt-5 inline-flex max-w-full cursor-pointer items-center gap-3 text-left text-[clamp(26px,5vw,56px)] tracking-[-0.06em] break-all text-white transition-opacity hover:opacity-60"
             style={heading}
           >
-            <span className="underline decoration-1 underline-offset-[8px]">{profile.email}</span>
+            <span className="link-line">{profile.email}</span>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-[15px] text-white/60" style={{ fontFamily: 'var(--font-body)' }}>
               <CopyIcon copied={copied} />
               {copied ? 'Copied' : 'Copy'}
@@ -365,7 +443,7 @@ function Contact({ index }: { index: string }) {
           style={heading}
         >
           <GitHubIcon size={profile.email ? 26 : 48} />
-          <span className="underline decoration-1 underline-offset-[8px]">github.com/{profile.github.handle}</span>
+          <span className="link-line">github.com/{profile.github.handle}</span>
           <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1">
             ↗
           </span>
@@ -375,14 +453,16 @@ function Contact({ index }: { index: string }) {
           <ul className="mt-8 flex flex-wrap gap-2">
             {profile.socials.map((s) => (
               <li key={s.href}>
-                <a
-                  href={s.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-5 py-2 text-[15px] text-white transition-colors duration-200 hover:bg-white hover:text-black"
-                >
-                  {s.label} <span aria-hidden="true">↗</span>
-                </a>
+                <Magnetic strength={0.3}>
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-5 py-2 text-[15px] text-white transition-colors duration-200 hover:bg-white hover:text-black"
+                  >
+                    {s.label} <span aria-hidden="true">↗</span>
+                  </a>
+                </Magnetic>
               </li>
             ))}
           </ul>

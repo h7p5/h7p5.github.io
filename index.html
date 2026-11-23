@@ -6,6 +6,12 @@
     <title>Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded here instead of a CSS @import, so the font and the hero image download in parallel. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300..800;1,400;1,500&display=swap"
+    />
+    <link rel="preload" as="image" href="/images/hero-normal.webp" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>
