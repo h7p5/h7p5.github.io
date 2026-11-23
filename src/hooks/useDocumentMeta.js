@@ -33,7 +33,7 @@ const ROOM_META = {
     contact: {
         path: '/contact',
         title: 'Contact — Achraf (h7p5)',
-        description: 'GitHub and Instagram links, or send a message.',
+        description: 'GitHub, Instagram, X and Reddit links, or send a message.',
     },
 };
 

@@ -118,7 +118,7 @@ const ScreenReaderOverlay = () => {
                         {currentRoom === 'contact' && (
                             <div aria-label="Contact room content">
                                 <h3>Contact Me</h3>
-                                <p>Floating barrels with links to my GitHub and Instagram, and one to send me a message.</p>
+                                <p>Floating barrels with links to my GitHub, Instagram, X and Reddit, and one to send me a message.</p>
                             </div>
                         )}
                         {currentRoom === 'studio' && (

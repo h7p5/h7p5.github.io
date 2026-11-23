@@ -14,6 +14,8 @@ const LLMS_TXT = `# Achraf (h7p5)
 ## Links
 - GitHub: https://github.com/h7p5
 - Instagram: https://www.instagram.com/h_7p5/
+- X: https://x.com/h7p_5
+- Reddit: https://www.reddit.com/user/Quiet-Disaster4904/
 `;
 
 export function sitePages() {

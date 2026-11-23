@@ -18,6 +18,14 @@ import { useAudio } from '../../../../context/AudioManager';
 import { useTexture } from '@react-three/drei';
 import { usePaintMaterial } from '../Gallery/usePaintMaterial';
 
+// Social links shown as barrels. A barrel only appears when its link is set.
+const SOCIAL_LINKS = {
+    github: 'https://github.com/h7p5',
+    instagram: 'https://www.instagram.com/h_7p5/',
+    x: 'https://x.com/h7p_5',
+    reddit: 'https://www.reddit.com/user/Quiet-Disaster4904/',
+};
+
 const WAVE_LAYERS = 4;
 
 // ============================================
@@ -404,7 +412,7 @@ const ContactRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
                 rotation={[0, 0.2, 0]}
                 texturePath="/textures/contact/beczka.webp"
                 label="GITHUB"
-                onClick={() => window.open('https://github.com/h7p5', '_blank')}
+                onClick={() => window.open(SOCIAL_LINKS.github, '_blank')}
                 paintOnBeforeCompile={onBeforeCompile}
                 paintUniforms={uniformsData}
             />
@@ -414,10 +422,34 @@ const ContactRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
                 rotation={[0, -0.2, 0]}
                 texturePath="/textures/contact/beczka.webp"
                 label="INSTAGRAM"
-                onClick={() => window.open('https://www.instagram.com/h_7p5/', '_blank')}
+                onClick={() => window.open(SOCIAL_LINKS.instagram, '_blank')}
                 paintOnBeforeCompile={onBeforeCompile}
                 paintUniforms={uniformsData}
             />
+            {/* X */}
+            {SOCIAL_LINKS.x && (
+                <SocialBarrel
+                    position={isMobile ? [-1.5, -0.3, -7] : [-5, -0.3, -8]}
+                    rotation={[0, 0.3, 0]}
+                    texturePath="/textures/contact/beczka.webp"
+                    label="X"
+                    onClick={() => window.open(SOCIAL_LINKS.x, '_blank')}
+                    paintOnBeforeCompile={onBeforeCompile}
+                    paintUniforms={uniformsData}
+                />
+            )}
+            {/* REDDIT */}
+            {SOCIAL_LINKS.reddit && (
+                <SocialBarrel
+                    position={isMobile ? [1.5, -0.3, -7] : [5, -0.3, -8]}
+                    rotation={[0, -0.3, 0]}
+                    texturePath="/textures/contact/beczka.webp"
+                    label="REDDIT"
+                    onClick={() => window.open(SOCIAL_LINKS.reddit, '_blank')}
+                    paintOnBeforeCompile={onBeforeCompile}
+                    paintUniforms={uniformsData}
+                />
+            )}
             {/* MAIL (Triggers animation) */}
             <SocialBarrel
                 position={isMobile ? [0, -0.7, -6] : [0, -0.7, -7]}
