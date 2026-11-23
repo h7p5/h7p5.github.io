@@ -30,11 +30,13 @@ const STATS: { r: number; from: number; to: number; dot: number; value: string; 
 ].filter((s) => s.value !== '0')
 const ARC_CENTER = { x: -110, y: 300 }
 
-/* Brush-trail reveal */
-const STAMP_LIFE = 1100 // ms a brush stamp lives before it's gone
-const IDLE_BEFORE_WANDER = 2500 // touch only: ms without input before the trail wanders on its own
+/* Brush-stroke reveal */
+const TRAIL_LIFE = 950 // ms a point of the stroke lives before the tail has shrunk past it
+const FOLLOW = 0.2 // how fast the brush tip catches up with the cursor, per 60 fps frame (lower = silkier lag)
+const MASK_SCALE = 0.25 // the mask is drawn at ¼ size and blurred, which gives soft edges for almost nothing
+const IDLE_BEFORE_WANDER = 2500 // touch only: ms without input before the stroke wanders on its own
 
-type Stamp = { x: number; y: number; t: number; lobes: { dx: number; dy: number; r: number }[] }
+type TrailPoint = { x: number; y: number; t: number }
 
 const EASE_OUT = 'cubic-bezier(0.22,1,0.36,1)'
 
@@ -344,7 +346,7 @@ function Hero() {
     const syncTouch = () => (coarse = touchMQ.matches)
     touchMQ.addEventListener('change', syncTouch)
 
-    // Offscreen canvas holding the brush trail (opaque where the cyber image should show).
+    // Offscreen canvas holding the brush stroke (opaque where the cyber image should show).
     const mask = document.createElement('canvas')
     const mctx = mask.getContext('2d')!
 
@@ -364,63 +366,74 @@ function Hero() {
       dpr = d
       W = r.width
       H = r.height
-      canvas.width = mask.width = Math.round(W * dpr)
-      canvas.height = mask.height = Math.round(H * dpr)
+      canvas.width = Math.round(W * dpr)
+      canvas.height = Math.round(H * dpr)
     }
     fitCanvas(hero.getBoundingClientRect())
 
     // Brush size follows the portrait (≈ ¾ of the hero height), not the full screen width.
     const ref = () => Math.max(H * 0.75, 260)
 
-    let stamps: Stamp[] = []
-    let last: { x: number; y: number } | null = null
-    let lastMove = -Infinity
-    let autoT = 0
-    let wanderLast: { x: number; y: number } | null = null
-
-    // One organic blob: 3–5 overlapping hard-edged circles, so the edges look torn.
-    const addStamp = (x: number, y: number, now: number) => {
-      const base = ref() * (coarse ? 0.15 : 0.12)
-      const n = 3 + Math.floor(Math.random() * 3)
-      const lobes = Array.from({ length: n }, () => {
-        const a = Math.random() * Math.PI * 2
-        const d = Math.random() * base * 0.45
-        return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, r: base * (0.45 + Math.random() * 0.55) }
-      })
-      stamps.push({ x, y, t: now, lobes })
+    // Low-res mask + a blurred copy of it (soft edge). Sized in fitMask().
+    const soft = document.createElement('canvas')
+    const sctx = soft.getContext('2d')!
+    const fitMask = () => {
+      const mw = Math.max(1, Math.round(W * MASK_SCALE))
+      const mh = Math.max(1, Math.round(H * MASK_SCALE))
+      if (mask.width !== mw || mask.height !== mh) {
+        mask.width = soft.width = mw
+        mask.height = soft.height = mh
+      }
     }
+
+    let trail: TrailPoint[] = []
+    let target: { x: number; y: number } | null = null // where the cursor is
+    let tip: { x: number; y: number } | null = null // the brush tip, gliding after the cursor
+    let lastMove = -Infinity
+    let lastTick = performance.now()
+    let autoT = 0
 
     const pointerTo = (clientX: number, clientY: number, now: number) => {
       const r = canvas.getBoundingClientRect()
-      const x = clientX - r.left
-      const y = clientY - r.top
-      if (last) {
-        // Fill the gap between events so fast moves leave a continuous stroke.
-        const step = ref() * 0.04
-        const dist = Math.hypot(x - last.x, y - last.y)
-        const count = Math.min(40, Math.floor(dist / step))
-        for (let i = 1; i <= count; i++) {
-          const f = i / (count + 1)
-          addStamp(last.x + (x - last.x) * f, last.y + (y - last.y) * f, now)
-        }
-      }
-      addStamp(x, y, now)
-      last = { x, y }
+      target = { x: clientX - r.left, y: clientY - r.top }
+      if (!tip) tip = { ...target }
       lastMove = now
     }
 
-    // Touch only: after a while with no input, the trail drifts around the face by itself.
-    const autoWander = (now: number) => {
-      if (now - lastMove < IDLE_BEFORE_WANDER) {
-        wanderLast = null
+    // Touch only: after a while with no input, the stroke drifts around the face by itself.
+    const autoWander = (now: number, frames: number) => {
+      if (now - lastMove < IDLE_BEFORE_WANDER) return
+      autoT += 0.016 * frames
+      target = { x: W * 0.5 + Math.sin(autoT * 1.3) * 0.28 * ref(), y: H * (0.32 + Math.sin(autoT * 0.9 + 1) * 0.22) }
+      if (!tip) tip = { ...target }
+    }
+
+    // The stroke: a smooth curve through the trail, full width at the tip, tapering to nothing at the tail.
+    const drawStroke = (now: number) => {
+      mctx.setTransform(MASK_SCALE, 0, 0, MASK_SCALE, 0, 0)
+      mctx.clearRect(0, 0, W, H)
+      mctx.strokeStyle = mctx.fillStyle = '#000'
+      mctx.lineCap = 'round'
+      mctx.lineJoin = 'round'
+      const base = ref() * (coarse ? 0.26 : 0.22)
+      const width = (p: TrailPoint) => base * Math.pow(Math.max(0, 1 - (now - p.t) / TRAIL_LIFE), 0.65)
+      const n = trail.length
+      if (n === 1) {
+        mctx.beginPath()
+        mctx.arc(trail[0].x, trail[0].y, width(trail[0]) / 2, 0, Math.PI * 2)
+        mctx.fill()
         return
       }
-      autoT += 0.016
-      const x = W * 0.5 + Math.sin(autoT * 1.3) * 0.28 * ref()
-      const y = H * (0.32 + Math.sin(autoT * 0.9 + 1) * 0.22)
-      if (!wanderLast || Math.hypot(x - wanderLast.x, y - wanderLast.y) > ref() * 0.02) {
-        addStamp(x, y, now)
-        wanderLast = { x, y }
+      // Each piece runs midpoint → midpoint with the trail point as control, so joins are seamless.
+      for (let i = 1; i < n; i++) {
+        const p0 = trail[i - 1]
+        const p1 = trail[i]
+        const p2 = trail[i + 1] ?? p1
+        mctx.beginPath()
+        mctx.moveTo(i === 1 ? p0.x : (p0.x + p1.x) / 2, i === 1 ? p0.y : (p0.y + p1.y) / 2)
+        mctx.quadraticCurveTo(p1.x, p1.y, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+        mctx.lineWidth = width(p1)
+        mctx.stroke()
       }
     }
 
@@ -447,7 +460,11 @@ function Hero() {
       pointerTo(e.clientX, e.clientY, performance.now())
     }
     const onPointerDown = (e: PointerEvent) => pointerTo(e.clientX, e.clientY, performance.now())
-    const onPointerLeave = () => (last = null)
+    const onPointerLeave = () => {
+      // Stop feeding the stroke; what is left shrinks away on its own.
+      target = null
+      tip = null
+    }
 
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick)
@@ -463,10 +480,20 @@ function Hero() {
       pattern.setAttribute('x', grid.x.toFixed(2))
       pattern.setAttribute('y', grid.y.toFixed(2))
 
-      // Brush trail
-      if (coarse) autoWander(now)
-      stamps = stamps.filter((s) => now - s.t < STAMP_LIFE)
-      if (!stamps.length) {
+      // Brush stroke: the tip glides after the cursor (frame-rate independent), leaving points behind.
+      const frames = Math.min(4, (now - lastTick) / 16.67)
+      lastTick = now
+      if (coarse) autoWander(now, frames)
+      if (target && tip) {
+        const k = 1 - Math.pow(1 - FOLLOW, frames)
+        tip.x += (target.x - tip.x) * k
+        tip.y += (target.y - tip.y) * k
+        const lastP = trail[trail.length - 1]
+        if (!lastP || Math.hypot(tip.x - lastP.x, tip.y - lastP.y) > 1.5) trail.push({ x: tip.x, y: tip.y, t: now })
+        else lastP.t = now // resting cursor: keep the tip alive under it
+      }
+      trail = trail.filter((p) => now - p.t < TRAIL_LIFE)
+      if (!trail.length) {
         if (painted) {
           ctx.clearRect(0, 0, canvas.width, canvas.height)
           painted = false
@@ -474,23 +501,14 @@ function Hero() {
         return
       }
 
-      // 1. Mask: each stamp holds, then shrinks away over the last quarter of its life.
-      mctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      mctx.clearRect(0, 0, W, H)
-      mctx.fillStyle = '#000'
-      for (const s of stamps) {
-        const k = 1 - (now - s.t) / STAMP_LIFE
-        const scale = k < 0.75 ? k / 0.75 : 1
-        const rScale = Math.pow(scale, 0.8)
-        mctx.beginPath()
-        for (const l of s.lobes) {
-          const cx = s.x + l.dx * scale
-          const cy = s.y + l.dy * scale
-          mctx.moveTo(cx + l.r * rScale, cy)
-          mctx.arc(cx, cy, l.r * rScale, 0, Math.PI * 2)
-        }
-        mctx.fill()
-      }
+      // 1. Mask at ¼ size, then a blurred copy of it for soft edges.
+      fitMask()
+      drawStroke(now)
+      sctx.setTransform(1, 0, 0, 1, 0, 0)
+      sctx.clearRect(0, 0, soft.width, soft.height)
+      sctx.filter = 'blur(1.2px)'
+      sctx.drawImage(mask, 0, 0)
+      sctx.filter = 'none'
 
       // 2. Cyber image clipped to the mask. The base image underneath is opaque,
       //    so inside the trail only the cyber version is visible.
@@ -498,7 +516,9 @@ function Hero() {
       ctx.globalCompositeOperation = 'source-over'
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       if (backReady) {
-        ctx.drawImage(mask, 0, 0)
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(soft, 0, 0, canvas.width, canvas.height)
         ctx.globalCompositeOperation = 'source-in'
         drawCover(back)
         ctx.globalCompositeOperation = 'source-over'
