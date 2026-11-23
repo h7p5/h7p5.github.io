@@ -103,10 +103,8 @@ export const IMAGE_ASSETS = [
     '/images/pin-slot.webp',
 ];
 
-// Additional textures from App.jsx and the avatar (body + waving forearm)
+// Additional textures from App.jsx (the avatar is a video: /videos/avatar-wave.mp4)
 export const UI_TEXTURES = [
-    '/textures/corridor/avatar_wave/body.webp',
-    '/textures/corridor/avatar_wave/forearm.webp',
 ];
 
 // ============================================
