@@ -1,21 +1,37 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 /**
  * Avatar Component - Hand-drawn sketch style character
- * 
- * New sketchy avatar with WOW effects:
+ *
  * - Parallax depth effect on scroll
- * - Hand-drawn line style matching entrance
  * - Dodges when camera approaches
- * - Frame-by-frame animation (Boomerang effect: 1-6-1)
+ * - Waves: the forearm is a separate layer that rotates around the elbow
+ *   every frame, so the motion is continuous instead of frame-by-frame.
  */
+
+// Both textures are 1024x1024 and share the same canvas, so they line up exactly.
+const BODY_URL = '/textures/corridor/avatar_wave/body.webp';
+const FOREARM_URL = '/textures/corridor/avatar_wave/forearm.webp';
+const TEX_SIZE = 1024;
+const ELBOW_PX = [665, 318]; // elbow pivot in texture pixels
+
+const SIZE = 2.3; // plane width and height (square texture)
+
+// Wave: angle swings between WAVE_MIN and WAVE_MAX degrees (positive = towards the head)
+const WAVE_MIN = -4;
+const WAVE_MAX = 12;
+const WAVE_SPEED = 9; // radians per second (~1.4 waves per second)
+
+// Elbow position in plane coordinates (plane centered on 0,0)
+const PIVOT_X = (ELBOW_PX[0] / TEX_SIZE - 0.5) * SIZE;
+const PIVOT_Y = (0.5 - ELBOW_PX[1] / TEX_SIZE) * SIZE;
+
 const Avatar = ({ position = [10, -20, 30] }) => {
-    const meshRef = useRef();
     const groupRef = useRef();
-    const [dimensions, setDimensions] = useState({ width: 1.2, height: 2.4 });
+    const forearmRef = useRef();
     const { camera } = useThree();
 
     // Dodge state
@@ -23,43 +39,15 @@ const Avatar = ({ position = [10, -20, 30] }) => {
     const targetDodgeX = useRef(0);
     const worldPosVec = useRef(new THREE.Vector3());
 
-    // --- FRAME-BY-FRAME ANIMATION (PING-PONG) ---
-    const TOTAL_FRAMES = 9;
-    const framePaths = Array.from({ length: TOTAL_FRAMES }, (_, i) => `/textures/corridor/avatar_anim/${i + 1}.webp`);
+    const [bodyTex, forearmTex] = useTexture([BODY_URL, FOREARM_URL]);
 
-    // Load all texture frames
-    const textures = useTexture(framePaths);
-
-    // Animation control refs
-    // start at index 0 (which refers to 1.webp)
-    const currentFrame = useRef(0);
-    const isReversing = useRef(false);
-    const frameTimer = useRef(0);
-
-    // Apply color space and calculate dimensions once
     useEffect(() => {
-        textures.forEach(tex => tex.colorSpace = THREE.SRGBColorSpace);
+        bodyTex.colorSpace = THREE.SRGBColorSpace;
+        forearmTex.colorSpace = THREE.SRGBColorSpace;
+    }, [bodyTex, forearmTex]);
 
-        if (textures[0] && textures[0].image) {
-            const aspectRatio = textures[0].image.width / textures[0].image.height;
-            const baseHeight = 2.3; // Fixed size
-            setDimensions({
-                width: baseHeight * aspectRatio,
-                height: baseHeight
-            });
-        }
-
-        // Set initial texture to avoid white flash, but don't bind it declaratively 
-        // to prevent React from overwriting our useFrame mutations
-        if (meshRef.current && textures[currentFrame.current]) {
-            meshRef.current.material.map = textures[currentFrame.current];
-            meshRef.current.material.needsUpdate = true;
-        }
-    }, [textures]);
-
-    // Main animation loop
-    useFrame((state, delta) => {
-        if (!groupRef.current || !meshRef.current) return;
+    useFrame((state) => {
+        if (!groupRef.current) return;
 
         // === DODGE LOGIC ===
         groupRef.current.getWorldPosition(worldPosVec.current);
@@ -85,51 +73,40 @@ const Avatar = ({ position = [10, -20, 30] }) => {
         groupRef.current.position.x = position[0] + dodgeX.current;
         groupRef.current.position.y = position[1];
 
-        // === FRAME ANIMATION LOGIC (PING-PONG) ===
-        // Using delta for consistent speed regardless of monitor Hz
-        const FPS = 20; // Prędkość machania (klatki na sekundę)
-        const frameDuration = 1 / FPS;
-
-        frameTimer.current += delta;
-
-        if (frameTimer.current >= frameDuration) {
-            frameTimer.current = 0; // Reset timer
-
-            // Jesteśmy na ostatniej (od prawej)? To machamy do lewej
-            if (currentFrame.current >= TOTAL_FRAMES - 1) {
-                isReversing.current = true;
-            }
-            // Jesteśmy na indeksie 0 (czyli 1.webp)? To machamy z powrotem do prawej
-            else if (currentFrame.current <= 0) {
-                isReversing.current = false;
-            }
-
-            // Przejście klatki
-            if (isReversing.current) {
-                currentFrame.current -= 1;
-            } else {
-                currentFrame.current += 1;
-            }
-
-            // Zabezpieczenie przed błędem indeksu (nie schodzimy poniżej 0)
-            const safeIndex = Math.max(0, Math.min(TOTAL_FRAMES - 1, currentFrame.current));
-
-            // Aplikacja tekstury
-            meshRef.current.material.map = textures[safeIndex];
-            meshRef.current.material.needsUpdate = true;
+        // === WAVE ===
+        if (forearmRef.current) {
+            const s = Math.sin(state.clock.elapsedTime * WAVE_SPEED); // -1..1
+            const deg = WAVE_MIN + (WAVE_MAX - WAVE_MIN) * (s * 0.5 + 0.5);
+            forearmRef.current.rotation.z = THREE.MathUtils.degToRad(deg);
         }
     });
 
     return (
         <group ref={groupRef} position={position}>
-            <mesh ref={meshRef}>
-                <planeGeometry args={[dimensions.width, dimensions.height]} />
-                <meshBasicMaterial color="#ffffff"
+            <mesh renderOrder={1}>
+                <planeGeometry args={[SIZE, SIZE]} />
+                <meshBasicMaterial
+                    map={bodyTex}
+                    color="#ffffff"
                     transparent={true}
                     side={THREE.DoubleSide}
                     depthWrite={false}
                 />
             </mesh>
+
+            {/* Forearm + hand, rotating around the elbow */}
+            <group ref={forearmRef} position={[PIVOT_X, PIVOT_Y, 0.002]}>
+                <mesh position={[-PIVOT_X, -PIVOT_Y, 0]} renderOrder={2}>
+                    <planeGeometry args={[SIZE, SIZE]} />
+                    <meshBasicMaterial
+                        map={forearmTex}
+                        color="#ffffff"
+                        transparent={true}
+                        side={THREE.DoubleSide}
+                        depthWrite={false}
+                    />
+                </mesh>
+            </group>
         </group>
     );
 };
